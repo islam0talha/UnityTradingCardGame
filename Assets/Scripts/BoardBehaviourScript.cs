@@ -48,7 +48,7 @@ public class BoardBehaviourScript : MonoBehaviour
     public HeroBehaviourScript targetHero;
 
     public List<Hashtable> boardHistory = new List<Hashtable>();
-
+    public int AILEVEL = 0;
     public void AddHistory(CardGameBase a, CardGameBase b)
     {
         Hashtable hash = new Hashtable();
@@ -384,61 +384,85 @@ public class BoardBehaviourScript : MonoBehaviour
     }
     void AI_Think()
     {
-        //StartCoroutine(waitsec());
-        if (turn == Turn.AITurn)
+        if (AILEVEL == 0)
         {
-            Hashtable attacks = new Hashtable();
-
-            #region attacking
-            foreach (GameObject Card in AITableCards)
+            #region 0 Level AI
+            //StartCoroutine(waitsec());
+            if (turn == Turn.AITurn)
             {
-                CardBehaviourScript card = Card.GetComponent<CardBehaviourScript>();
+                Hashtable attacks = new Hashtable();
 
-                if (card.canPlay)
+                #region attacking
+                foreach (GameObject Card in AITableCards)
                 {
-                    float changeToAttackhero = Random.value;
+                    CardBehaviourScript card = Card.GetComponent<CardBehaviourScript>();
 
-                    if (changeToAttackhero < 0.50f)
+                    if (card.canPlay)
                     {
-                        card.AttackHero(card, MyHero, delegate {
-                            card.canPlay = false;
-                        });
-                    }
-                    else if (MyTableCards.Count > 0)
-                    {
-                        int random = Random.Range(0, MyTableCards.Count);
-                        GameObject CardToAttack = MyTableCards[random];
+                        float changeToAttackhero = Random.value;
 
-                        attacks.Add(card, CardToAttack.GetComponent<CardBehaviourScript>());
+                        if (changeToAttackhero < 0.50f)
+                        {
+                            card.AttackHero(card, MyHero, delegate
+                            {
+                                card.canPlay = false;
+                            });
+                        }
+                        else if (MyTableCards.Count > 0)
+                        {
+                            int random = Random.Range(0, MyTableCards.Count);
+                            GameObject CardToAttack = MyTableCards[random];
+
+                            attacks.Add(card, CardToAttack.GetComponent<CardBehaviourScript>());
+                        }
                     }
                 }
-            }
 
-            foreach (DictionaryEntry row in attacks)
-            {
-                CardBehaviourScript tempCard = row.Key as CardBehaviourScript;
-                CardBehaviourScript temp2 = row.Value as CardBehaviourScript;
+                foreach (DictionaryEntry row in attacks)
+                {
+                    CardBehaviourScript tempCard = row.Key as CardBehaviourScript;
+                    CardBehaviourScript temp2 = row.Value as CardBehaviourScript;
 
-                tempCard.AttackCard(tempCard, temp2, delegate {
-                    tempCard.canPlay = false;
-                });
-            }
-            #endregion
+                    tempCard.AttackCard(tempCard, temp2, delegate
+                    {
+                        tempCard.canPlay = false;
+                    });
+                }
+                #endregion
 
-            #region placing cards
-            float chanceToPlace = Random.value;
+                #region placing cards
+                float chanceToPlace = Random.value;
 
-            if (AIHandCards.Count == 0)
-            {
-                EndTurn();
-            }
-            else
-            {
-                PlaceRandomCard(CardBehaviourScript.Team.AI);
+                if (AIHandCards.Count == 0)
+                {
+                    EndTurn();
+                }
+                else
+                {
+                    PlaceRandomCard(CardBehaviourScript.Team.AI);
+                }
+                #endregion
+
             }
             #endregion
         }
-    }//random At The First
+        else if (AILEVEL>0)
+        {
+            AIGameState InitialState = new AIGameState(
+                //MyHandCards,
+                MyTableCards,
+                AIHandCards,
+                AITableCards,
+                MyHero,
+                AIHero,
+                maxMana,
+                MyMana,
+                AIMana,
+                turn
+                );
+
+        }
+    }
     void OnTriggerEnter(Collider Obj)
     {
         CardBehaviourScript card = Obj.GetComponent<CardBehaviourScript>();

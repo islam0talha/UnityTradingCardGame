@@ -1,10 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
-public class CardBehaviourScript : CardGameBase
+[System.Serializable]
+public class CardBehaviourScript : CardGameBase, System.ICloneable
 {
-    
+
     public string description = "Description";
     public Texture2D image;
     public int health;
@@ -17,12 +20,12 @@ public class CardBehaviourScript : CardGameBase
     public TextMesh manaText;
     public TextMesh DescriptionText;
     public TextMesh DebugText;
-    
+
 
     public bool canPlay = false;
     public enum CardStatus { InDeck, InHand, OnTable, Destroyed };
     public CardStatus cardStatus = CardStatus.InDeck;
-    public enum CardType { Monster,Magic};
+    public enum CardType { Monster, Magic };
     public CardType cardtype;
     public enum CardEffect { ToAll, ToEnemies, ToSpecific };
     public CardEffect cardeffect;
@@ -41,7 +44,7 @@ public class CardBehaviourScript : CardGameBase
         distance_to_screen = Camera.main.WorldToScreenPoint(gameObject.transform.position).z - 1;
         DescriptionText.text = description.ToString();
 
-        cardtype = (CardType)Random.Range(0,2);
+        cardtype = (CardType)Random.Range(0, 2);
 
 
         mana = Random.Range(1, 2);
@@ -50,17 +53,18 @@ public class CardBehaviourScript : CardGameBase
         string[] characters = { "a", "b", "c", "d", "e", "f" };
         for (int i = 0; i < 5; i++)
             _name += characters[Random.Range(0, characters.Length)];
-        if (cardtype==CardType.Magic)
+        if (cardtype == CardType.Magic)
         {
             health = 0;
             _Attack = 0;
-            AddedAttack= Random.Range(1, 8);
+            AddedAttack = Random.Range(1, 8);
             AddedHealth = Random.Range(1, 8);
             cardeffect = (CardEffect)Random.Range(0, 3);
-            if (cardeffect==CardEffect.ToSpecific)
+            if (cardeffect == CardEffect.ToSpecific)
             {
                 DescriptionText.text = "Add " + AddedAttack + "/" + AddedHealth + "\n" + "   To Any Selected Moster";
-            }else if (cardeffect == CardEffect.ToAll)
+            }
+            else if (cardeffect == CardEffect.ToAll)
             {
                 DescriptionText.text = "Add " + AddedAttack + "/" + AddedHealth + "\n" + "   To ALL";
             }
@@ -116,7 +120,7 @@ public class CardBehaviourScript : CardGameBase
         {
             if (BoardBehaviourScript.instance.currentCard)
             {
-                if (BoardBehaviourScript.instance.currentCard.cardtype == CardType.Magic && BoardBehaviourScript.instance.currentCard.cardeffect==CardEffect.ToSpecific && BoardBehaviourScript.instance.turn == BoardBehaviourScript.Turn.MyTurn && cardStatus == CardStatus.OnTable)//Magic VS Card
+                if (BoardBehaviourScript.instance.currentCard.cardtype == CardType.Magic && BoardBehaviourScript.instance.currentCard.cardeffect == CardEffect.ToSpecific && BoardBehaviourScript.instance.turn == BoardBehaviourScript.Turn.MyTurn && cardStatus == CardStatus.OnTable)//Magic VS Card
                 {//What Magic Card Will Do To MosterCard
                     BoardBehaviourScript.instance.targetCard = this;
                     print("Target card: " + _Attack + ":" + health);
@@ -141,7 +145,7 @@ public class CardBehaviourScript : CardGameBase
                 BoardBehaviourScript.instance.currentCard = this;
                 print("Selected card: " + _Attack + ":" + health);
             }
-            
+
         }
 
         if (BoardBehaviourScript.instance.turn == BoardBehaviourScript.Turn.MyTurn && cardStatus == CardStatus.OnTable && team == Team.AI && BoardBehaviourScript.instance.currentCard)//Card VS Card
@@ -255,7 +259,7 @@ public class CardBehaviourScript : CardGameBase
 
         BoardBehaviourScript.instance.TablePositionUpdate();
     }
-    public void AddToHero(CardBehaviourScript magic,HeroBehaviourScript target, CustomAction action)
+    public void AddToHero(CardBehaviourScript magic, HeroBehaviourScript target, CustomAction action)
     {
         if (magic.canPlay)
         {
@@ -266,7 +270,7 @@ public class CardBehaviourScript : CardGameBase
             BoardBehaviourScript.instance.AddHistory(magic, target);
         }
     }//Magic
-    public void AddToMonster(CardBehaviourScript magic,CardBehaviourScript target, CustomAction action)
+    public void AddToMonster(CardBehaviourScript magic, CardBehaviourScript target, CustomAction action)
     {
         if (magic.canPlay)
         {
@@ -277,7 +281,7 @@ public class CardBehaviourScript : CardGameBase
             BoardBehaviourScript.instance.AddHistory(magic, target);
         }
     }//Magic
-    public void AddToAll(CardBehaviourScript magic,CustomAction action)
+    public void AddToAll(CardBehaviourScript magic, CustomAction action)
     {
         if (magic.canPlay)
         {
@@ -303,4 +307,20 @@ public class CardBehaviourScript : CardGameBase
             action();
         }
     }//Magic
+
+    public object Clone()
+    {
+
+        using (MemoryStream stream = new MemoryStream())
+        {
+            if (this.GetType().IsSerializable)
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+                formatter.Serialize(stream, this);
+                stream.Position = 0;
+                return formatter.Deserialize(stream);
+            }
+            return null;
+        }
+    }
 }

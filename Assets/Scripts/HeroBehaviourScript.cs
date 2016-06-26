@@ -1,7 +1,11 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
-public class HeroBehaviourScript : CardGameBase
+[Serializable]
+public class HeroBehaviourScript : CardGameBase ,ICloneable
 {
 
     public int health = 30;
@@ -96,6 +100,21 @@ public class HeroBehaviourScript : CardGameBase
             }
             action();
             BoardBehaviourScript.instance.AddHistory(attacker, target);
+        }
+    }
+
+    public object Clone()
+    {
+        using (MemoryStream stream = new MemoryStream())
+        {
+            if (this.GetType().IsSerializable)
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+                formatter.Serialize(stream, this);
+                stream.Position = 0;
+                return formatter.Deserialize(stream);
+            }
+            return null;
         }
     }
 }
