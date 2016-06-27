@@ -105,16 +105,11 @@ public class HeroBehaviourScript : CardGameBase ,ICloneable
 
     public object Clone()
     {
-        using (MemoryStream stream = new MemoryStream())
-        {
-            if (this.GetType().IsSerializable)
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-                formatter.Serialize(stream, this);
-                stream.Position = 0;
-                return formatter.Deserialize(stream);
-            }
-            return null;
-        }
+        HeroBehaviourScript temp = new HeroBehaviourScript();
+        temp._name = _name;
+        temp.health = health;
+        temp.CanAttack = CanAttack;
+        temp._Attack = _Attack;
+        return temp;
     }
 }

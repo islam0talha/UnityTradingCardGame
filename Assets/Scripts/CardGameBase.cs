@@ -4,13 +4,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 
+[System.Serializable]
 public class CardGameBase : MonoBehaviour {
     public string _name = "";
+    public override string ToString() {
+        return _name;
+    }
 }
+[System.Serializable]
 public class AIGameState
 {
     public AIGameState ParentState;
-    public List<AIGameState> ChildsStatus;
+    public List<AIGameState> ChildsStatus=new List<AIGameState>();
 
     public HeroBehaviourScript PlayerHero;
     //public List<CardBehaviourScript> PlayerHandCards;// = new List<CardBehaviourScript>();
@@ -46,13 +51,17 @@ public class AIGameState
         BoardBehaviourScript.Turn _Turn
         )
     {
-        //PlayerHandCards = GenericCopier <List<CardBehaviourScript>>.DeepCopy(PlayerHand);
-        PlayerTableCards = GenericCopier<List<CardBehaviourScript>>.DeepCopy(PlayerTable);
+        //PlayerHandCards = CardListCopier.DeepCopy(PlayerHand);
+        PlayerTableCards = CardListCopier.DeepCopy(PlayerTable);
         PlayerHero = _PlayerHero.Clone() as HeroBehaviourScript;
 
-        AIHandCards = GenericCopier<List<CardBehaviourScript>>.DeepCopy(AIHand);
-        AITableCards = GenericCopier<List<CardBehaviourScript>>.DeepCopy(AITable);
+        AIHandCards = CardListCopier.DeepCopy(AIHand);
+        AITableCards = CardListCopier.DeepCopy(AITable);
         AIHero = _AIHero.Clone() as HeroBehaviourScript;
+        maxMana = _MaxMana;
+        PlayerMana = _PlayerMana;
+        AIMana = _AIMana;
+        turn = _Turn;
         Calculate_State_Score();
     }
     public AIGameState(
@@ -70,28 +79,32 @@ public class AIGameState
     {
         //List<CardBehaviourScript> _tempPlayerHand = new List<CardBehaviourScript>();
         //foreach (var item in PlayerHand)_tempPlayerHand.Add( item.GetComponent<CardBehaviourScript>());
-        //PlayerHandCards = GenericCopier<List<CardBehaviourScript>>.DeepCopy(_tempPlayerHand);
+        //PlayerHandCards = CardListCopier<List<CardBehaviourScript>>.DeepCopy(_tempPlayerHand);
 
         List<CardBehaviourScript> _tempPlayerTable = new List<CardBehaviourScript>();
         foreach (var item in PlayerTable) _tempPlayerTable.Add(item.GetComponent<CardBehaviourScript>());
-        PlayerTableCards = GenericCopier<List<CardBehaviourScript>>.DeepCopy(_tempPlayerTable);
+        PlayerTableCards = CardListCopier.DeepCopy(_tempPlayerTable);
 
         PlayerHero = _PlayerHero.Clone() as HeroBehaviourScript;
 
 
         List<CardBehaviourScript> _tempAIHand = new List<CardBehaviourScript>();
         foreach (var item in AIHand) _tempAIHand.Add(item.GetComponent<CardBehaviourScript>());
-        AIHandCards = GenericCopier<List<CardBehaviourScript>>.DeepCopy(_tempAIHand);
+        AIHandCards = CardListCopier.DeepCopy(_tempAIHand);
 
         List<CardBehaviourScript> _tempAITable = new List<CardBehaviourScript>();
         foreach (var item in AITable) _tempAITable.Add(item.GetComponent<CardBehaviourScript>());
-        AITableCards = GenericCopier<List<CardBehaviourScript>>.DeepCopy(_tempAITable);
+        AITableCards = CardListCopier.DeepCopy(_tempAITable);
 
         AIHero = _AIHero.Clone() as HeroBehaviourScript;
+        maxMana = _MaxMana;
+        PlayerMana = _PlayerMana;
+        AIMana = _AIMana;
+        turn = _Turn;
         Calculate_State_Score();
     }
     #endregion
-
+    //Evaluate State Score
     #region Calculate Score
     float Calculate_State_Score()
     {
@@ -134,36 +147,104 @@ public class AIGameState
     {
         if (turn == BoardBehaviourScript.Turn.AITurn)
         {
-            if(AIHandCards.Count==0)
+            if (AIHandCards.Count == 0)
             {
                 //EndTurn Nothing To Play
             }
             else
             {
-                ///Generate All Possible Placing
-                
+                //Generate All Possible Placing
+                List<List<CardBehaviourScript>> temp= ProducePlacing(AIHandCards,AIMana);
+                for (int i = 0; i < temp.Count; i++)
+                {
+                    AIGameState State = new AIGameState(PlayerTableCards,AIHandCards,AITableCards,PlayerHero,AIHero,maxMana,PlayerMana,AIMana,turn);
+                    //if(temp[i].Count>0)
+                    for (int j = 0; j < temp[i].Count; j++)
+                    {
+
+                        State.PlaceCard(temp[i][j]);
+                        
+                    }
+                    State.Calculate_State_Score();
+                    ChildsStatus.Add(State);
+                }
             }
         }
+        //Debug.Log("DonePlacing");
     }
     public void GetAllAttackingActions()
     {
 
     }
+    //public CardBehaviourScript Find_Best_Move()
+    //{
 
-    //Save Context
-    //Evaluate State Score
-    //
-}
-public static class GenericCopier<T>
-{
-    public static T DeepCopy(object objectToCopy)
+    //}
+    public void PlaceCard(CardBehaviourScript temp)
     {
-        using (MemoryStream memoryStream = new MemoryStream())
+        //
+        //Find That Card
+        //
+        CardBehaviourScript card = AIHandCards.Find(item => item._name == temp._name);
+        if (card.team == CardBehaviourScript.Team.AI && AIMana - card.mana >= 0 && AITableCards.Count < 10)
         {
-            BinaryFormatter binaryFormatter = new BinaryFormatter();
-            binaryFormatter.Serialize(memoryStream, objectToCopy);
-            memoryStream.Seek(0, SeekOrigin.Begin);
-            return (T)binaryFormatter.Deserialize(memoryStream);
+            AIHandCards.Remove(card);
+            AITableCards.Add(card);
+
+            card.SetCardStatus(CardBehaviourScript.CardStatus.OnTable);
+            if (card.cardtype == CardBehaviourScript.CardType.Magic)///Apply Magic Effect 
+            {
+                card.canPlay = true;
+                if (card.cardeffect == CardBehaviourScript.CardEffect.ToAll)
+                {
+                    card.AddToAll(card, delegate { /*card.Destroy(card);*/ });
+                }
+                else if (card.cardeffect == CardBehaviourScript.CardEffect.ToEnemies)
+                {
+                    card.AddToEnemies(card, PlayerTableCards, delegate { /*card.Destroy(card);*/ });
+                }
+            }
+
+            AIMana -= card.mana;
         }
     }
+    public List<List<CardBehaviourScript>> ProducePlacing(List<CardBehaviourScript> allValues, int maxmana)
+    {
+        var collection = new List<List<CardBehaviourScript>>();
+        for (int counter = 0; counter < (1 << allValues.Count); ++counter)
+        {
+            List<CardBehaviourScript> combination = new List<CardBehaviourScript>();
+            for (int i = 0; i < allValues.Count; ++i)
+            {
+                if ((counter & (1 << i)) == 0)
+                    combination.Add(allValues[i]);
+            }
+
+            // do something with combination
+            int manatotal = 0;
+            foreach (CardBehaviourScript Card in combination)
+            {
+                manatotal += Card.mana;
+
+            }
+            if (manatotal <= maxmana)
+                collection.Add(combination);
+        }
+        return collection;
+    }
 }
+public static class CardListCopier
+{
+    public static List<CardBehaviourScript> DeepCopy(List<CardBehaviourScript> objectToCopy)
+    {
+        List<CardBehaviourScript> temp = new List<CardBehaviourScript>();
+        foreach (CardBehaviourScript Card in objectToCopy)
+        {
+            temp.Add(Card.Clone()as CardBehaviourScript);
+        }
+
+        return temp;
+    }
+
+}
+

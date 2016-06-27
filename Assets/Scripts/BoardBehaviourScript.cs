@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-
+[System.Serializable]
 public class BoardBehaviourScript : MonoBehaviour
 {
 
@@ -379,8 +379,8 @@ public class BoardBehaviourScript : MonoBehaviour
         UpdateGame();
 
         if (turn == Turn.AITurn)
-            //AI_Think();
-        Invoke("AI_Think", 5.0f);
+            AI_Think();
+        //Invoke("AI_Think", 5.0f);
     }
     void AI_Think()
     {
@@ -460,6 +460,9 @@ public class BoardBehaviourScript : MonoBehaviour
                 AIMana,
                 turn
                 );
+            InitialState.GetAllPlacingAction();
+            InitialState.GetAllAttackingActions();
+
 
         }
     }

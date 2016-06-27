@@ -307,20 +307,36 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
             action();
         }
     }//Magic
+    public void AddToEnemies(CardBehaviourScript magic, List<CardBehaviourScript> targets, CustomAction action)
+    {
+        if (magic.canPlay)
+        {
+            foreach (var target in targets)
+            {
+                AddToMonster(magic, target, delegate { });
+            }
+            action();
+        }
+    }//Magic
 
     public object Clone()
     {
-
-        using (MemoryStream stream = new MemoryStream())
-        {
-            if (this.GetType().IsSerializable)
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-                formatter.Serialize(stream, this);
-                stream.Position = 0;
-                return formatter.Deserialize(stream);
-            }
-            return null;
-        }
+        CardBehaviourScript temp = new CardBehaviourScript();
+        temp._name = _name;
+        temp.description = this.description;
+        temp.health = this.health;
+        temp._Attack = this._Attack;
+        temp.mana = this.mana;
+        temp.canPlay = this.canPlay;
+        temp.cardStatus = this.cardStatus;
+        temp.cardtype = this.cardtype;
+        temp.cardeffect = this.cardeffect;
+        temp.AddedHealth = this.AddedHealth;
+        temp.AddedAttack = this.AddedAttack;
+        temp.team = this.team;
+        temp.newPos = this.newPos;
+        temp.distance_to_screen = this.distance_to_screen;
+        temp.Selected = this.Selected;
+        return temp;
     }
 }
