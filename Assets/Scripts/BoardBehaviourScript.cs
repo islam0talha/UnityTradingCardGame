@@ -4,7 +4,7 @@ using System.Collections.Generic;
 [System.Serializable]
 public class BoardBehaviourScript : MonoBehaviour
 {
-
+    
     public static BoardBehaviourScript instance;
 
     public Transform MYDeckPos;
@@ -386,13 +386,22 @@ public class BoardBehaviourScript : MonoBehaviour
     {
         if (AILEVEL == 0)
         {
-            #region 0 Level AI
-            //StartCoroutine(waitsec());
             if (turn == Turn.AITurn)
             {
-                Hashtable attacks = new Hashtable();
+                #region placing cards
+                //float chanceToPlace = Random.value;
 
+                if (AIHandCards.Count == 0)
+                {
+                    EndTurn();
+                }
+                else
+                {
+                    PlaceRandomCard(CardBehaviourScript.Team.AI);
+                }
+                #endregion
                 #region attacking
+                Hashtable attacks = new Hashtable();
                 foreach (GameObject Card in AITableCards)
                 {
                     CardBehaviourScript card = Card.GetComponent<CardBehaviourScript>();
@@ -403,10 +412,10 @@ public class BoardBehaviourScript : MonoBehaviour
 
                         if (changeToAttackhero < 0.50f)
                         {
-                            card.AttackHero(card, MyHero, delegate
-                            {
-                                card.canPlay = false;
-                            });
+                            card.AttackHero(card, MyHero, true, delegate
+                             {
+                                 card.canPlay = false;
+                             });
                         }
                         else if (MyTableCards.Count > 0)
                         {
@@ -423,48 +432,130 @@ public class BoardBehaviourScript : MonoBehaviour
                     CardBehaviourScript tempCard = row.Key as CardBehaviourScript;
                     CardBehaviourScript temp2 = row.Value as CardBehaviourScript;
 
-                    tempCard.AttackCard(tempCard, temp2, delegate
+                    tempCard.AttackCard(tempCard, temp2, true, delegate
+                     {
+                         tempCard.canPlay = false;
+                     });
+                }
+                #endregion
+            }
+        }
+        else if (AILEVEL > 0)
+        {
+            AIGetPlacing();
+            AIGetAttacks();
+            EndTurn();
+        }
+    }
+    void AIGetPlacing()
+    {
+        AIGameState InitialState = new AIGameState(/*MyHandCards,*/MyTableCards,AIHandCards,AITableCards,MyHero,AIHero,maxMana,MyMana,AIMana,turn);
+        InitialState.GetAllPlacingAction();
+        //Find Best Score
+        float MaxScore = float.MinValue;
+        AIGameState BestState = new AIGameState();
+        foreach (AIGameState item in AIGameState.AllStates)
+        {
+            if (item.State_Score > MaxScore)
+            {
+                MaxScore = item.State_Score;
+                BestState = item;
+            }
+        }
+        int count = BestState.Actions.Count;
+        //GetActions
+        for (int i = 0; i < count; i++)
+        {
+            AIGameState.Action a;
+            a = BestState.Actions.Dequeue();
+            if (a.OpCode == 0)
+            {
+
+                foreach (var item in AIHandCards)
+                {
+                    if (item.GetComponent<CardBehaviourScript>()._name == a.Card1)
                     {
-                        tempCard.canPlay = false;
+                        PlaceCard(item.GetComponent<CardBehaviourScript>());
+                        break;
+                    }
+                }
+            }
+        }
+        AIGameState.AllStates.Clear();
+    }
+    void AIGetAttacks()
+    {
+        AIGameState InitialState = new AIGameState(/*MyHandCards,*/MyTableCards, AIHandCards, AITableCards, MyHero, AIHero, maxMana, MyMana, AIMana, turn);
+        InitialState.GetAllAttackingActions();
+        InitialState.GetAllAttackingHeroActions();
+
+        //Find Best Score
+        float MaxScore = float.MinValue;
+        AIGameState BestState = new AIGameState();
+        foreach (AIGameState item in AIGameState.AllStates)
+        {
+            if (item.State_Score > MaxScore)
+            {
+                MaxScore = item.State_Score;
+                BestState = item;
+            }
+        }
+        int count = BestState.Actions.Count;
+        //GetActions
+        for (int i = 0; i < count; i++)
+        {
+            AIGameState.Action a;
+            a = BestState.Actions.Dequeue();
+            if (a.OpCode == 1)
+            {
+                foreach (var item in AITableCards)//Find Card1
+                {
+                    if (item.GetComponent<CardBehaviourScript>()._name == a.Card1)
+                    {
+                        currentCard = item.GetComponent<CardBehaviourScript>();
+                        break;
+                    }
+                }
+                foreach (var item in MyTableCards)//Find Card2
+                {
+                    if (item.GetComponent<CardBehaviourScript>()._name == a.Card2)
+                    {
+                        targetCard = item.GetComponent<CardBehaviourScript>();
+                        break;
+                    }
+                }
+                if (currentCard != null && targetCard != null)//MakeAction
+                {
+                    currentCard.AttackCard(currentCard, targetCard, true, delegate
+                    {
+                        currentCard.canPlay = false;
                     });
                 }
-                #endregion
-
-                #region placing cards
-                float chanceToPlace = Random.value;
-
-                if (AIHandCards.Count == 0)
-                {
-                    EndTurn();
-                }
-                else
-                {
-                    PlaceRandomCard(CardBehaviourScript.Team.AI);
-                }
-                #endregion
-
             }
-            #endregion
+            else if (a.OpCode == 2)
+            {
+                foreach (var item in AITableCards)//Find Card1
+                {
+                    if (item.GetComponent<CardBehaviourScript>()._name == a.Card1)
+                    {
+                        currentCard = item.GetComponent<CardBehaviourScript>();
+                        break;
+                    }
+                }
+                if (a.Hero == "MyHero")
+                {
+                    targetHero = MyHero;
+                }
+                if (currentCard != null && targetHero != null)
+                {
+                    currentCard.AttackHero(currentCard, MyHero, true, delegate
+                    {
+                        currentCard.canPlay = false;
+                    });
+                }
+            }
         }
-        else if (AILEVEL>0)
-        {
-            AIGameState InitialState = new AIGameState(
-                //MyHandCards,
-                MyTableCards,
-                AIHandCards,
-                AITableCards,
-                MyHero,
-                AIHero,
-                maxMana,
-                MyMana,
-                AIMana,
-                turn
-                );
-            InitialState.GetAllPlacingAction();
-            InitialState.GetAllAttackingActions();
-
-
-        }
+        AIGameState.AllStates.Clear();
     }
     void OnTriggerEnter(Collider Obj)
     {

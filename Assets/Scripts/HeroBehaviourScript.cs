@@ -25,7 +25,7 @@ public class HeroBehaviourScript : CardGameBase ,ICloneable
             {
                 if (BoardBehaviourScript.instance.currentCard.cardtype==CardBehaviourScript.CardType.Monster && BoardBehaviourScript.instance.turn == BoardBehaviourScript.Turn.MyTurn)
                 {
-                    BoardBehaviourScript.instance.currentCard.AttackHero(BoardBehaviourScript.instance.currentCard, this, delegate
+                    BoardBehaviourScript.instance.currentCard.AttackHero(BoardBehaviourScript.instance.currentCard, this,true, delegate
                     {
                         BoardBehaviourScript.instance.currentCard.canPlay = false;
                     });

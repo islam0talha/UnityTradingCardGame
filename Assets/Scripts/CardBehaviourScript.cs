@@ -21,7 +21,7 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
     public TextMesh DescriptionText;
     public TextMesh DebugText;
 
-
+    public bool GenerateRandomeData = false;
     public bool canPlay = false;
     public enum CardStatus { InDeck, InHand, OnTable, Destroyed };
     public CardStatus cardStatus = CardStatus.InDeck;
@@ -44,41 +44,46 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
         distance_to_screen = Camera.main.WorldToScreenPoint(gameObject.transform.position).z - 1;
         DescriptionText.text = description.ToString();
 
-        cardtype = (CardType)Random.Range(0, 2);
-
-
-        mana = Random.Range(1, 2);
-
-        //Generate Randome Name
-        string[] characters = { "a", "b", "c", "d", "e", "f" };
-        for (int i = 0; i < 5; i++)
-            _name += characters[Random.Range(0, characters.Length)];
-        if (cardtype == CardType.Magic)
+        if (GenerateRandomeData)
         {
-            health = 0;
-            _Attack = 0;
-            AddedAttack = Random.Range(1, 8);
-            AddedHealth = Random.Range(1, 8);
-            cardeffect = (CardEffect)Random.Range(0, 3);
-            if (cardeffect == CardEffect.ToSpecific)
-            {
-                DescriptionText.text = "Add " + AddedAttack + "/" + AddedHealth + "\n" + "   To Any Selected Moster";
-            }
-            else if (cardeffect == CardEffect.ToAll)
-            {
-                DescriptionText.text = "Add " + AddedAttack + "/" + AddedHealth + "\n" + "   To ALL";
-            }
-            else if (cardeffect == CardEffect.ToEnemies)
-            {
-                DescriptionText.text = "Add " + AddedAttack + "/" + AddedHealth + "\n" + "   To ALL Enemies";
-            }
 
-        }
-        else
-        {
-            //Generate Randome Data
-            health = Random.Range(1, 8);
-            _Attack = Random.Range(1, 8);
+
+            cardtype = (CardType)Random.Range(0, 2);
+
+
+            mana = Random.Range(1, 10);
+
+            //Generate Randome Name
+            string[] characters = { "a", "b", "c", "d", "e", "f" };
+            for (int i = 0; i < 5; i++)
+                _name += characters[Random.Range(0, characters.Length)];
+            if (cardtype == CardType.Magic)
+            {
+                health = 0;
+                _Attack = 0;
+                AddedAttack = Random.Range(1, 8);
+                AddedHealth = Random.Range(1, 8);
+                cardeffect = (CardEffect)Random.Range(0, 3);
+                if (cardeffect == CardEffect.ToSpecific)
+                {
+                    DescriptionText.text = "Add " + AddedAttack + "/" + AddedHealth + "\n" + "   To Any Selected Moster";
+                }
+                else if (cardeffect == CardEffect.ToAll)
+                {
+                    DescriptionText.text = "Add " + AddedAttack + "/" + AddedHealth + "\n" + "   To ALL";
+                }
+                else if (cardeffect == CardEffect.ToEnemies)
+                {
+                    DescriptionText.text = "Add " + AddedAttack + "/" + AddedHealth + "\n" + "   To ALL Enemies";
+                }
+
+            }
+            else
+            {
+                //Generate Randome Data
+                health = Random.Range(1, 8);
+                _Attack = Random.Range(1, 8);
+            }
         }
     }
     void FixedUpdate()
@@ -157,7 +162,7 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
                 print("Target card: " + _Attack + ":" + health);
                 if (BoardBehaviourScript.instance.currentCard.canPlay)
                 {
-                    AttackCard(BoardBehaviourScript.instance.currentCard, BoardBehaviourScript.instance.targetCard, delegate
+                    AttackCard(BoardBehaviourScript.instance.currentCard, BoardBehaviourScript.instance.targetCard,true, delegate
                     {
                         BoardBehaviourScript.instance.currentCard.canPlay = false;
                     });
@@ -214,7 +219,7 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
     {
         cardStatus = status;
     }
-    public void AttackCard(CardBehaviourScript attacker, CardBehaviourScript target, CustomAction action)
+    public void AttackCard(CardBehaviourScript attacker, CardBehaviourScript target,bool addhistory, CustomAction action)
     {
         if (attacker.canPlay)
         {
@@ -232,10 +237,11 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
             }
 
             action();
+            if(addhistory)
             BoardBehaviourScript.instance.AddHistory(attacker, target);
         }
     }//Attack
-    public void AttackHero(CardBehaviourScript attacker, HeroBehaviourScript target, CustomAction action)
+    public void AttackHero(CardBehaviourScript attacker, HeroBehaviourScript target, bool addhistory, CustomAction action)
     {
         if (attacker.canPlay)
         {
@@ -243,21 +249,30 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
             attacker.health -= target._Attack;
 
             action();
-            BoardBehaviourScript.instance.AddHistory(attacker, target);
+            if (addhistory)
+                BoardBehaviourScript.instance.AddHistory(attacker, target);
         }
     }//Attack
     public void Destroy(CardBehaviourScript card)
     {
-        if (card.team == CardBehaviourScript.Team.My)
-            BoardBehaviourScript.instance.MyTableCards.Remove(card.gameObject);
-        else if (card.team == CardBehaviourScript.Team.AI)
-            BoardBehaviourScript.instance.AITableCards.Remove(card.gameObject);
+        if (card!=null)
+            if(card.gameObject!=null)
+        {
+            if (card.team == CardBehaviourScript.Team.My)
+                BoardBehaviourScript.instance.MyTableCards.Remove(card.gameObject);
+            else if (card.team == CardBehaviourScript.Team.AI)
+                BoardBehaviourScript.instance.AITableCards.Remove(card.gameObject);
 
 
-        //BoardBehaviourScript.instance.PlaySound(BoardBehaviourScript.instance.cardDestroy);
-        Destroy(card.gameObject);
+            //BoardBehaviourScript.instance.PlaySound(BoardBehaviourScript.instance.cardDestroy);
+            Destroy(card.gameObject);
 
-        BoardBehaviourScript.instance.TablePositionUpdate();
+            BoardBehaviourScript.instance.TablePositionUpdate();
+        }
+        else
+        {
+            card = null;
+        }
     }
     public void AddToHero(CardBehaviourScript magic, HeroBehaviourScript target, CustomAction action)
     {
