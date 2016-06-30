@@ -8,6 +8,7 @@ using System;
 public class AIGameState
 {
     public static List<AIGameState> AllStates = new List<AIGameState>();
+    public static float TimePased;
     public AIGameState ParentState;
     public List<AIGameState> ChildsStatus = new List<AIGameState>();
     public int Index;
@@ -58,16 +59,19 @@ public class AIGameState
         int _MaxMana,
         int _PlayerMana,
         int _AIMana,
-        BoardBehaviourScript.Turn _Turn
+        BoardBehaviourScript.Turn _Turn,
+        AIGameState Parent
         )
     {
+        ParentState = Parent;
         if (ParentState == null)
         {
             Index = 0;
         }
         else
         {
-            Index = ParentState.Index++;
+            Index = ParentState.Index+1;
+            Actions = new Queue<Action>( ParentState.Actions);
         }
         //PlayerHandCards = CardListCopier.DeepCopy(PlayerHand);
         PlayerTableCards = CardListCopier.DeepCopy(PlayerTable);
@@ -98,16 +102,19 @@ public class AIGameState
          int _MaxMana,
          int _PlayerMana,
          int _AIMana,
-         BoardBehaviourScript.Turn _Turn
+         BoardBehaviourScript.Turn _Turn,
+         AIGameState Parent
         )
     {
+        ParentState = Parent;
         if (ParentState == null)
         {
             Index = 0;
         }
         else
         {
-            Index = ParentState.Index++;
+            Index = ParentState.Index+1;
+            Actions = new Queue<Action>(ParentState.Actions);
         }
         //List<CardBehaviourScript> _tempPlayerHand = new List<CardBehaviourScript>();
         //foreach (var item in PlayerHand)_tempPlayerHand.Add( item.GetComponent<CardBehaviourScript>());
@@ -201,7 +208,7 @@ public class AIGameState
                 List<List<CardBehaviourScript>> temp = ProducePlacing(AIHandCards, AIMana);
                 for (int i = 0; i < temp.Count; i++)
                 {
-                    AIGameState State = new AIGameState(PlayerTableCards, AIHandCards, AITableCards, PlayerHero, AIHero, maxMana, PlayerMana, AIMana, turn);
+                    AIGameState State = new AIGameState(PlayerTableCards, AIHandCards, AITableCards, PlayerHero, AIHero, maxMana, PlayerMana, AIMana, turn,this);
                     //if(temp[i].Count>0)
                     for (int j = 0; j < temp[i].Count; j++)
                     {
@@ -220,7 +227,19 @@ public class AIGameState
     {
         _GetAllAttackingActions();
         _GetAllAttackingHeroActions();
-        if (Index < AILEVEL) GetAllAttackingActions(AILEVEL);
+        TimePased += Time.deltaTime;
+        if (Index+1 < AILEVEL)
+        {
+            foreach (var item in ChildsStatus)
+            {
+                item.GetAllAttackingActions(AILEVEL);
+            }
+            
+
+        }else
+        {
+            TimePased = 0;
+        }
     }
     void _GetAllAttackingActions()
     {
@@ -249,7 +268,7 @@ public class AIGameState
             {
                 for (int i = 0; i < temp.Count; i++)
                 {
-                    AIGameState State = new AIGameState(PlayerTableCards, AIHandCards, AITableCards, PlayerHero, AIHero, maxMana, PlayerMana, AIMana, turn);
+                    AIGameState State = new AIGameState(PlayerTableCards, AIHandCards, AITableCards, PlayerHero, AIHero, maxMana, PlayerMana, AIMana, turn, this);
                     for (int j = 0; j < temp[i].Count; j++)
                     {
                         if (temp[i][j].canPlay)
@@ -281,7 +300,7 @@ public class AIGameState
         List<List<CardBehaviourScript>> temp = ProduceAllAttackCombinations(AITableCards);
         for (int i = 0; i < temp.Count; i++)
         {
-            AIGameState State = new AIGameState(PlayerTableCards, AIHandCards, AITableCards, PlayerHero, AIHero, maxMana, PlayerMana, AIMana, turn);
+            AIGameState State = new AIGameState(PlayerTableCards, AIHandCards, AITableCards, PlayerHero, AIHero, maxMana, PlayerMana, AIMana, turn,this);
             for (int j = 0; j < temp[i].Count; j++)
             {
                 if (temp[i][j].canPlay)

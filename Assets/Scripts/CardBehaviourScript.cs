@@ -226,12 +226,12 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
 
             if (target.health <= 0)
             {
-                Destroy(target);
+                    Destroy(target);
             }
 
             if (attacker.health <= 0)
             {
-                attacker.Destroy(attacker);
+                    attacker.Destroy(attacker);
             }
 
             action();

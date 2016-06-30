@@ -407,10 +407,10 @@ public class BoardBehaviourScript : MonoBehaviour
         MyMana = maxMana;
         AIMana = maxMana;
         turnNumber += 1;
-        currentCard = null;
-        targetCard = null;
-        currentHero = null;
-        targetHero = null;
+        currentCard = new CardBehaviourScript() ;
+        targetCard = new CardBehaviourScript();
+        currentHero = new HeroBehaviourScript();
+        targetHero = new HeroBehaviourScript();
         foreach (GameObject card in MyTableCards)
             card.GetComponent<CardBehaviourScript>().canPlay = true;
 
@@ -462,6 +462,7 @@ public class BoardBehaviourScript : MonoBehaviour
     }
     void AIthink()
     {
+        AIGameState.AllStates.Clear();// = new List<AIGameState>();
         AIGetPlacing();
         AIGetAttacks();
         EndTurn();
@@ -533,7 +534,7 @@ public class BoardBehaviourScript : MonoBehaviour
     }
     void AIGetPlacing()
     {
-        AIGameState InitialState = new AIGameState(/*MyHandCards,*/MyTableCards,AIHandCards,AITableCards,MyHero,AIHero,maxMana,MyMana,AIMana,turn);
+        AIGameState InitialState = new AIGameState(/*MyHandCards,*/MyTableCards,AIHandCards,AITableCards,MyHero,AIHero,maxMana,MyMana,AIMana,turn,null);
         InitialState.GetAllPlacingAction();
         //Find Best Score
         float MaxScore = float.MinValue;
@@ -569,7 +570,7 @@ public class BoardBehaviourScript : MonoBehaviour
     }
     void AIGetAttacks()
     {
-        AIGameState InitialState = new AIGameState(/*MyHandCards,*/MyTableCards, AIHandCards, AITableCards, MyHero, AIHero, maxMana, MyMana, AIMana, turn);
+        AIGameState InitialState = new AIGameState(/*MyHandCards,*/MyTableCards, AIHandCards, AITableCards, MyHero, AIHero, maxMana, MyMana, AIMana, turn,null);
         InitialState.GetAllAttackingActions(AILEVEL);
         //Find Best Score
         float MaxScore = float.MinValue;
@@ -582,8 +583,8 @@ public class BoardBehaviourScript : MonoBehaviour
                 BestState = item;
             }
         }
+        //Debug.Log("Best choice Index" + BestState.Index);
         int count = BestState.Actions.Count;
-        Debug.Log("Best Coise Index"+BestState.Index);
         //GetActions
         for (int i = 0; i < count; i++)
         {
@@ -658,12 +659,12 @@ public class BoardBehaviourScript : MonoBehaviour
                 {
                     currentCard.AddToMonster(currentCard, targetCard, true, delegate
                     {
-                        currentCard.canPlay = false;
+                        currentCard.Destroy(currentCard);
                     });
                 }
             }
         }
-        AIGameState.AllStates.Clear();
+        //AIGameState.AllStates=new List< AIGameState > ();
     }
     void OnTriggerEnter(Collider Obj)
     {
