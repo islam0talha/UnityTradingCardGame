@@ -34,7 +34,7 @@ To play the game you will start with 1 mana and you must drag the card till the 
 | 1. | The active player receives 1 Mana slot up to a maximum of 10 total slots. |
 | 2. | The active player&#39;s empty Mana slots are refilled. |
 | 3. | The active player draws a random card from his deck. |
-| 4. | The active player can play as many cards as he can afford. Any played card empties Mana slots and deals immediate damage to the opponent player equal to its Mana cost. |
+| 4. | The active player can play as many cards as he can afford. |
 | 5. | If the opponent player&#39;s Health drops to or below zero the active player wins the game. |
 | 6. | If the active player can&#39;t (by either having no cards left in his hand or lacking sufficient Mana to pay for any hand card) or simply doesn&#39;t want to play another card, the opponent player becomes active. |
 
@@ -42,13 +42,13 @@ To play the game you will start with 1 mana and you must drag the card till the 
 
 | **Rule** |
 | --- |
-| When playing a card the active player can choose to use it for causing damage or for _healing himself_  |
+| When playing a Magic card Depend on it&#39;s effect the active player can choose to use it for causing damage or for _healing himself_  |
 | Players cannot heal up above 30 health. |
 
-### **Minions**
+### **Monsters**
 
 | **Rule** |
 | --- |
 | Let players choose to play cards either as immediate damage _Attacks_ or as _Minions_ that are put on the board instead |
-| Sleeping Minions will defend themselves in the same way when attacked by another Minion. |
-| When a Minions health drops to or below zero it is removed from the board. |
+| Sleeping Monsters will defend themselves in the same way when attacked by another Minion. |
+| When a Monsters health drops to or below zero it is removed from the board. |
