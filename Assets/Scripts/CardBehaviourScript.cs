@@ -253,22 +253,24 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
     }//Attack
     public void Destroy(CardBehaviourScript card)
     {
-        if (card!=null)
-            if(card.gameObject!=null)
+        if (card)
         {
-            if (card.team == CardBehaviourScript.Team.My)
-                BoardBehaviourScript.instance.MyTableCards.Remove(card.gameObject);
-            else if (card.team == CardBehaviourScript.Team.AI)
-                BoardBehaviourScript.instance.AITableCards.Remove(card.gameObject);
+            if (card.gameObject != null)
+            {
+                if (card.team == CardBehaviourScript.Team.My)
+                    BoardBehaviourScript.instance.MyTableCards.Remove(card.gameObject);
+                else if (card.team == CardBehaviourScript.Team.AI)
+                    BoardBehaviourScript.instance.AITableCards.Remove(card.gameObject);
 
 
-            //BoardBehaviourScript.instance.PlaySound(BoardBehaviourScript.instance.cardDestroy);
-            Destroy(card.gameObject);
+                //BoardBehaviourScript.instance.PlaySound(BoardBehaviourScript.instance.cardDestroy);
+                Destroy(card.gameObject);
 
-            BoardBehaviourScript.instance.TablePositionUpdate();
-        }
-        else
-        {
+                BoardBehaviourScript.instance.TablePositionUpdate();
+            }
+
+        }else
+            {
             card = null;
         }
     }

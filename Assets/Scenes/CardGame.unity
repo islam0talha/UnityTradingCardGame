@@ -6537,7 +6537,7 @@ MonoBehaviour:
   targetCard: {fileID: 0}
   currentHero: {fileID: 0}
   targetHero: {fileID: 0}
-  AILEVEL: 1
+  AILEVEL: 0
   layer:
     serializedVersion: 2
     m_Bits: 256
