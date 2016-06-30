@@ -49,6 +49,6 @@ To play the game you will start with 1 mana and you must drag the card till the 
 
 | **Rule** |
 | --- |
-| Let players choose to play cards either as immediate damage _Attacks_ or as _Minions_ that are put on the board instead |
-| Sleeping Monsters will defend themselves in the same way when attacked by another Minion. |
+| Let players choose to play cards either as immediate damage _Attacks_ or as _Monsters_ that are put on the board instead |
+| Sleeping Monsters will defend themselves in the same way when attacked by another Monster. |
 | When a Monsters health drops to or below zero it is removed from the board. |
