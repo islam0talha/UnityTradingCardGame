@@ -1,3 +1,5 @@
+A Unity C# trading card game (similar to Hearthstone) 
+
 You can run the game directly from unity.
 
 Find the Game Object &quot;Board&quot; you can specify the AI level
