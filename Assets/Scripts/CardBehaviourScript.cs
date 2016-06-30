@@ -279,8 +279,10 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
         if (magic.canPlay)
         {
             target._Attack += magic.AddedAttack;
-            target.health += magic.AddedHealth;
-
+            if (target.health + magic.AddedHealth <= 30)
+                target.health += magic.AddedHealth;
+            else
+                target.health = 30;
             action();
             BoardBehaviourScript.instance.AddHistory(magic, target);
         }
