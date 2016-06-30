@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Card
   - Hero
+  - Board
   layers:
   - Default
   - TransparentFX
@@ -15,7 +16,7 @@ TagManager:
   - UI
   - 
   - 
-  - 
+  - Board
   - 
   - 
   - 

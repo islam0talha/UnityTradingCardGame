@@ -6,7 +6,7 @@ public class BoardBehaviourScript : MonoBehaviour
 {
     
     public static BoardBehaviourScript instance;
-
+    public UnityEngine.UI.Text winnertext;
     public Transform MYDeckPos;
     public Transform MyHandPos;
     public Transform MyTablePos;
@@ -49,6 +49,7 @@ public class BoardBehaviourScript : MonoBehaviour
 
     public List<Hashtable> boardHistory = new List<Hashtable>();
     public int AILEVEL = 0;
+    public LayerMask layer;
     public void AddHistory(CardGameBase a, CardGameBase b)
     {
         Hashtable hash = new Hashtable();
@@ -56,6 +57,10 @@ public class BoardBehaviourScript : MonoBehaviour
         hash.Add(a, b);
 
         boardHistory.Add(hash);
+        currentCard = null;
+        targetCard = null;
+        currentHero = null;
+        targetHero = null;
     }
     void Awake()
     {
@@ -136,6 +141,51 @@ public class BoardBehaviourScript : MonoBehaviour
             targetHero = null;
             Debug.Log("Action Revet");
         }
+        //if(BoardBehaviourScript.instance.currentCard&&BoardBehaviourScript.instance.targetCard)
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit, 250, layer))
+            {
+                if (hit.transform.CompareTag("Board"))
+                {
+                    //do whatever......
+                    //Debug.Log(hit.point);
+                    if(BoardBehaviourScript.instance.currentHero)
+                    drawMyLine(BoardBehaviourScript.instance.currentHero.transform.position, hit.point, Color.blue, 0.1f);
+                    if (BoardBehaviourScript.instance.currentCard)
+                    drawMyLine(BoardBehaviourScript.instance.currentCard.transform.position, hit.point, Color.blue, 0.1f);
+                }
+            }
+        }
+
+        if (MyHero.health <= 0)
+            EndGame(AIHero);
+        if (AIHero.health <= 0)
+            EndGame(MyHero);
+
+    }
+    void drawMyLine(Vector3 start, Vector3 end, Color color, float duration = 0.2f)
+    {
+
+        StartCoroutine(drawLine(start, end, color, duration));
+
+    }
+    IEnumerator drawLine(Vector3 start, Vector3 end, Color color, float duration = 0.2f)
+    {
+        GameObject myLine = new GameObject();
+        myLine.transform.position = start;
+        myLine.AddComponent<LineRenderer>();
+        LineRenderer lr = myLine.GetComponent<LineRenderer>();
+        lr.material = new Material(Shader.Find("Particles/Additive"));
+        lr.SetColors(color, color);
+        lr.SetWidth(0.1f, 0.1f);
+        lr.SetVertexCount(3);
+        lr.SetPosition(0, start);
+        lr.SetPosition(1,(( (-start+ end)*0.5f+start))+new Vector3(0,0,-5.0f));
+        lr.SetPosition(2, end);
+        yield return new WaitForSeconds(duration);
+        GameObject.Destroy(myLine);
     }
     void UpdateGame()
     {
@@ -233,11 +283,11 @@ public class BoardBehaviourScript : MonoBehaviour
                 card.canPlay = true;
                 if (card.cardeffect == CardBehaviourScript.CardEffect.ToAll)
                 {
-                    card.AddToAll(card, delegate { card.Destroy(card); });
+                    card.AddToAll(card,true, delegate { card.Destroy(card); });
                 }
                 else if (card.cardeffect == CardBehaviourScript.CardEffect.ToEnemies)
                 {
-                    card.AddToEnemies(card,AITableCards, delegate { card.Destroy(card); });
+                    card.AddToEnemies(card,AITableCards,true, delegate { card.Destroy(card); });
                 }
             }
 
@@ -260,11 +310,11 @@ public class BoardBehaviourScript : MonoBehaviour
                 card.canPlay = true;
                 if (card.cardeffect == CardBehaviourScript.CardEffect.ToAll)
                 {
-                    card.AddToAll(card, delegate { card.Destroy(card); });
+                    card.AddToAll(card,true, delegate { card.Destroy(card); });
                 }
                 else if (card.cardeffect == CardBehaviourScript.CardEffect.ToEnemies)
                 {
-                    card.AddToEnemies(card,MyTableCards, delegate { card.Destroy(card); });
+                    card.AddToEnemies(card,MyTableCards,true, delegate { card.Destroy(card); });
                 }
             }
 
@@ -299,18 +349,22 @@ public class BoardBehaviourScript : MonoBehaviour
         TablePositionUpdate();
         HandPositionUpdate();
     }
-    void EndGame(HeroBehaviourScript winner)
+    public void EndGame(HeroBehaviourScript winner)
     {
         if (winner == MyHero)
         {
             Debug.Log("MyHero");
-            Destroy(this);
+            Time.timeScale = 0;
+            winnertext.text = "You Won";
+            //Destroy(this);
         }
 
         if (winner == AIHero)
         {
+            Time.timeScale = 0;
             Debug.Log("AIHero");
-            Destroy(this);
+            winnertext.text = "You Losse";
+            //Destroy(this);
         }
     }
     void OnGUI()
@@ -325,7 +379,7 @@ public class BoardBehaviourScript : MonoBehaviour
                 }
             }
 
-            GUI.Label(new Rect(100, 0, 100, 50), "Turn: " + turn + " Turn Number: " + turnNumber.ToString());
+            GUI.Label(new Rect(Screen.width-200, Screen.height / 2 - 100, 100, 50), "Turn: " + turn + " Turn Number: " + turnNumber.ToString());
 
             foreach (Hashtable history in boardHistory)
             {
@@ -336,6 +390,13 @@ public class BoardBehaviourScript : MonoBehaviour
 
                     GUILayout.Label(card1._name + " > " + card2._name);
                 }
+            }
+            if (boardHistory.Count > 25)
+            {
+                Hashtable temp;
+                temp = boardHistory[boardHistory.Count - 1];
+                boardHistory.Clear();
+                boardHistory.Add(temp);
             }
         }
     }
@@ -388,64 +449,87 @@ public class BoardBehaviourScript : MonoBehaviour
         {
             if (turn == Turn.AITurn)
             {
-                #region placing cards
-                //float chanceToPlace = Random.value;
-
-                if (AIHandCards.Count == 0)
-                {
-                    EndTurn();
-                }
-                else
-                {
-                    PlaceRandomCard(CardBehaviourScript.Team.AI);
-                }
-                #endregion
-                #region attacking
-                Hashtable attacks = new Hashtable();
-                foreach (GameObject Card in AITableCards)
-                {
-                    CardBehaviourScript card = Card.GetComponent<CardBehaviourScript>();
-
-                    if (card.canPlay)
-                    {
-                        float changeToAttackhero = Random.value;
-
-                        if (changeToAttackhero < 0.50f)
-                        {
-                            card.AttackHero(card, MyHero, true, delegate
-                             {
-                                 card.canPlay = false;
-                             });
-                        }
-                        else if (MyTableCards.Count > 0)
-                        {
-                            int random = Random.Range(0, MyTableCards.Count);
-                            GameObject CardToAttack = MyTableCards[random];
-
-                            attacks.Add(card, CardToAttack.GetComponent<CardBehaviourScript>());
-                        }
-                    }
-                }
-
-                foreach (DictionaryEntry row in attacks)
-                {
-                    CardBehaviourScript tempCard = row.Key as CardBehaviourScript;
-                    CardBehaviourScript temp2 = row.Value as CardBehaviourScript;
-
-                    tempCard.AttackCard(tempCard, temp2, true, delegate
-                     {
-                         tempCard.canPlay = false;
-                     });
-                }
-                #endregion
+                Invoke("RendomActions", 2.0f);
             }
         }
         else if (AILEVEL > 0)
         {
-            AIGetPlacing();
-            AIGetAttacks();
+            if (turn == Turn.AITurn)
+            {
+                Invoke("AIthink", 2.0f);
+            }
+        }
+    }
+    void AIthink()
+    {
+        AIGetPlacing();
+        AIGetAttacks();
+        EndTurn();
+    }
+    void RendomActions()
+    {
+        #region placing cards
+        //float chanceToPlace = Random.value;
+
+        if (AIHandCards.Count == 0)
+        {
             EndTurn();
         }
+        else
+        {
+            PlaceRandomCard(CardBehaviourScript.Team.AI);
+        }
+        #endregion
+        #region attacking
+        Hashtable attacks = new Hashtable();
+        foreach (GameObject Card in AITableCards)
+        {
+            CardBehaviourScript card = Card.GetComponent<CardBehaviourScript>();
+
+            if (card.canPlay)
+            {
+                float changeToAttackhero = Random.value;
+
+                if (changeToAttackhero < 0.50f)
+                {
+                    card.AttackHero(card, MyHero, true, delegate
+                    {
+                        card.canPlay = false;
+                    });
+                }
+                else if (MyTableCards.Count > 0)
+                {
+                    int random = Random.Range(0, MyTableCards.Count);
+                    GameObject CardToAttack = MyTableCards[random];
+
+                    attacks.Add(card, CardToAttack.GetComponent<CardBehaviourScript>());
+                }
+            }
+        }
+
+        foreach (DictionaryEntry row in attacks)
+        {
+            CardBehaviourScript tempCard = row.Key as CardBehaviourScript;
+            CardBehaviourScript temp2 = row.Value as CardBehaviourScript;
+
+            if (tempCard.cardtype == CardBehaviourScript.CardType.Monster)
+            {
+                tempCard.AttackCard(tempCard, temp2, true, delegate
+                {
+                    tempCard.canPlay = false;
+                });
+            }
+            else if (tempCard.cardtype == CardBehaviourScript.CardType.Magic)
+            {
+                tempCard.AddToMonster(tempCard, temp2,true, delegate
+                {
+                    tempCard.canPlay = false;
+                    tempCard.Destroy(tempCard);
+                });
+            }
+
+        }
+        #endregion
     }
     void AIGetPlacing()
     {
@@ -486,9 +570,7 @@ public class BoardBehaviourScript : MonoBehaviour
     void AIGetAttacks()
     {
         AIGameState InitialState = new AIGameState(/*MyHandCards,*/MyTableCards, AIHandCards, AITableCards, MyHero, AIHero, maxMana, MyMana, AIMana, turn);
-        InitialState.GetAllAttackingActions();
-        InitialState.GetAllAttackingHeroActions();
-
+        InitialState.GetAllAttackingActions(AILEVEL);
         //Find Best Score
         float MaxScore = float.MinValue;
         AIGameState BestState = new AIGameState();
@@ -501,6 +583,7 @@ public class BoardBehaviourScript : MonoBehaviour
             }
         }
         int count = BestState.Actions.Count;
+        Debug.Log("Best Coise Index"+BestState.Index);
         //GetActions
         for (int i = 0; i < count; i++)
         {
@@ -553,6 +636,31 @@ public class BoardBehaviourScript : MonoBehaviour
                         currentCard.canPlay = false;
                     });
                 }
+            }else if (a.OpCode == 3)
+            {
+                foreach (var item in AITableCards)//Find Card1
+                {
+                    if (item.GetComponent<CardBehaviourScript>()._name == a.Card1)
+                    {
+                        currentCard = item.GetComponent<CardBehaviourScript>();
+                        break;
+                    }
+                }
+                foreach (var item in MyTableCards)//Find Card2
+                {
+                    if (item.GetComponent<CardBehaviourScript>()._name == a.Card2)
+                    {
+                        targetCard = item.GetComponent<CardBehaviourScript>();
+                        break;
+                    }
+                }
+                if (currentCard != null && targetCard != null)//MakeAction
+                {
+                    currentCard.AddToMonster(currentCard, targetCard, true, delegate
+                    {
+                        currentCard.canPlay = false;
+                    });
+                }
             }
         }
         AIGameState.AllStates.Clear();
@@ -566,8 +674,4 @@ public class BoardBehaviourScript : MonoBehaviour
         }
 
     }
-    //IEnumerator waitsec()
-    //{
-    //    yield return new WaitForSeconds(2);
-    //}
 }

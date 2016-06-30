@@ -90,13 +90,19 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
     {
         if (!Selected)
         {
-            transform.position = Vector3.Lerp(transform.position, newPos, Time.deltaTime * 5);
+            transform.position = Vector3.Lerp(transform.position, newPos, Time.deltaTime * 3);
             if (cardStatus != CardStatus.InDeck)
             {
-                transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0.0f, 180.0f, 0.0f), Time.deltaTime);
+                transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0.0f, 180.0f, 0.0f), Time.deltaTime*3);
             }
         }
-
+        if (cardtype==CardType.Monster)
+        {
+            if (health <= 0)
+            {
+                Destroy(this);
+            }
+        }
         //Update Visuals
         nameText.text = _name.ToString();
         healthText.text = health.ToString();
@@ -119,44 +125,33 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
             Selected = true;
         }
 
-        //if (cardtype==CardType.Monster)//MonsterType
-        //{
-        if (BoardBehaviourScript.instance.turn == BoardBehaviourScript.Turn.MyTurn && cardStatus == CardStatus.OnTable && team == Team.My)
+        
+        if (!BoardBehaviourScript.instance.currentCard && cardStatus==CardStatus.OnTable)
         {
-            if (BoardBehaviourScript.instance.currentCard)
-            {
-                if (BoardBehaviourScript.instance.currentCard.cardtype == CardType.Magic && BoardBehaviourScript.instance.currentCard.cardeffect == CardEffect.ToSpecific && BoardBehaviourScript.instance.turn == BoardBehaviourScript.Turn.MyTurn && cardStatus == CardStatus.OnTable)//Magic VS Card
-                {//What Magic Card Will Do To MosterCard
-                    BoardBehaviourScript.instance.targetCard = this;
-                    print("Target card: " + _Attack + ":" + health);
-                    if (BoardBehaviourScript.instance.currentCard.canPlay)
-                    {
-                        AddToMonster(BoardBehaviourScript.instance.currentCard, BoardBehaviourScript.instance.targetCard, delegate
-                        {
-                            BoardBehaviourScript.instance.currentCard.Destroy(BoardBehaviourScript.instance.currentCard);
-                        });
-                    }
-                }
-                else
+            //clicked on friendly card on table to attack another table card
+            BoardBehaviourScript.instance.currentCard = this;
+            print("Selected card: " + _Attack + ":" + health);
+        }
+        else if (BoardBehaviourScript.instance.currentCard && BoardBehaviourScript.instance.currentCard.cardtype == CardType.Magic && BoardBehaviourScript.instance.turn == BoardBehaviourScript.Turn.MyTurn && cardStatus == CardStatus.OnTable)
+        {
+            if (BoardBehaviourScript.instance.currentCard.cardeffect == CardEffect.ToSpecific)//Magic VS Card
+            {//What Magic Card Will Do To MonsterCard
+                BoardBehaviourScript.instance.targetCard = this;
+                print("Target card: " + _Attack + ":" + health);
+                if (BoardBehaviourScript.instance.currentCard.canPlay)
                 {
-                    //clicked on friendly card on table to attack another table card
-                    BoardBehaviourScript.instance.currentCard = this;
-                    print("Selected card: " + _Attack + ":" + health);
+                    AddToMonster(BoardBehaviourScript.instance.currentCard, BoardBehaviourScript.instance.targetCard,true, delegate
+                    {
+                        BoardBehaviourScript.instance.currentCard.Destroy(BoardBehaviourScript.instance.currentCard);
+                    });
                 }
-            }
-            else
-            {
-                //clicked on friendly card on table to attack another table card
-                BoardBehaviourScript.instance.currentCard = this;
-                print("Selected card: " + _Attack + ":" + health);
             }
 
         }
-
-        if (BoardBehaviourScript.instance.turn == BoardBehaviourScript.Turn.MyTurn && cardStatus == CardStatus.OnTable && team == Team.AI && BoardBehaviourScript.instance.currentCard)//Card VS Card
+        else if (BoardBehaviourScript.instance.currentCard && BoardBehaviourScript.instance.currentCard.cardtype == CardType.Monster && BoardBehaviourScript.instance.turn == BoardBehaviourScript.Turn.MyTurn && cardStatus == CardStatus.OnTable && BoardBehaviourScript.instance.currentCard!=this)//Card VS Card
         {
             //clicked opponent card on table on your turn
-            if (BoardBehaviourScript.instance.currentCard != null && canPlay)
+            if (BoardBehaviourScript.instance.currentCard != null && BoardBehaviourScript.instance.currentCard.canPlay)
             {
                 BoardBehaviourScript.instance.targetCard = this;
                 print("Target card: " + _Attack + ":" + health);
@@ -183,11 +178,14 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
                 });
             }
         }
-        //}
-        //else   ////Magic Type Card
-        //{
-
-        //}
+        else
+        {
+            BoardBehaviourScript.instance.currentCard = null;
+            BoardBehaviourScript.instance.currentHero = null;
+            BoardBehaviourScript.instance.targetCard = null;
+            BoardBehaviourScript.instance.targetHero = null;
+            Debug.Log("Action Reset");
+        }
 
     }
     void OnMouseUp()
@@ -285,50 +283,50 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
             BoardBehaviourScript.instance.AddHistory(magic, target);
         }
     }//Magic
-    public void AddToMonster(CardBehaviourScript magic, CardBehaviourScript target, CustomAction action)
+    public void AddToMonster(CardBehaviourScript magic, CardBehaviourScript target,bool addhistory, CustomAction action)
     {
         if (magic.canPlay)
         {
             target._Attack += magic.AddedAttack;
             target.health += magic.AddedHealth;
-
             action();
+            if(addhistory)
             BoardBehaviourScript.instance.AddHistory(magic, target);
         }
     }//Magic
-    public void AddToAll(CardBehaviourScript magic, CustomAction action)
+    public void AddToAll(CardBehaviourScript magic, bool addhistory, CustomAction action)
     {
         if (magic.canPlay)
         {
             foreach (var target in BoardBehaviourScript.instance.AITableCards)
             {
-                AddToMonster(magic, target.GetComponent<CardBehaviourScript>(), delegate { });
+                AddToMonster(magic, target.GetComponent<CardBehaviourScript>(), addhistory, delegate { });
             }
             foreach (var target in BoardBehaviourScript.instance.MyTableCards)
             {
-                AddToMonster(magic, target.GetComponent<CardBehaviourScript>(), delegate { });
+                AddToMonster(magic, target.GetComponent<CardBehaviourScript>(), addhistory, delegate { });
             }
             action();
         }
     }//Magic
-    public void AddToEnemies(CardBehaviourScript magic, List<GameObject> targets, CustomAction action)
+    public void AddToEnemies(CardBehaviourScript magic, List<GameObject> targets, bool addhistory, CustomAction action)
     {
         if (magic.canPlay)
         {
             foreach (var target in targets)
             {
-                AddToMonster(magic, target.GetComponent<CardBehaviourScript>(), delegate { });
+                AddToMonster(magic, target.GetComponent<CardBehaviourScript>(), addhistory, delegate { });
             }
             action();
         }
     }//Magic
-    public void AddToEnemies(CardBehaviourScript magic, List<CardBehaviourScript> targets, CustomAction action)
+    public void AddToEnemies(CardBehaviourScript magic, List<CardBehaviourScript> targets, bool addhistory, CustomAction action)
     {
         if (magic.canPlay)
         {
             foreach (var target in targets)
             {
-                AddToMonster(magic, target, delegate { });
+                AddToMonster(magic, target, addhistory, delegate { });
             }
             action();
         }

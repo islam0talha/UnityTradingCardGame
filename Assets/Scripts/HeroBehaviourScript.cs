@@ -42,8 +42,11 @@ public class HeroBehaviourScript : CardGameBase ,ICloneable
         }
         else if (BoardBehaviourScript.instance.turn == BoardBehaviourScript.Turn.MyTurn && !BoardBehaviourScript.instance.currentHero)
         {
-            BoardBehaviourScript.instance.currentHero = this;
-            Debug.Log(name+"   Hero Selected");
+            //if (BoardBehaviourScript.instance.currentHero._name == "MyHero")
+            {
+                BoardBehaviourScript.instance.currentHero = this;
+                Debug.Log(name + "   Hero Selected");
+            }
         }
         else if (BoardBehaviourScript.instance.turn == BoardBehaviourScript.Turn.MyTurn && BoardBehaviourScript.instance.currentHero && CanAttack)//Hero Vs Hero
         {
@@ -97,6 +100,7 @@ public class HeroBehaviourScript : CardGameBase ,ICloneable
             if (target.health <= 0)
             {
                 Destroy(target.gameObject);
+                BoardBehaviourScript.instance.EndGame(attacker);
             }
             action();
             BoardBehaviourScript.instance.AddHistory(attacker, target);
