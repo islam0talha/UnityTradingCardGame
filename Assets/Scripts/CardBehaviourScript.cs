@@ -271,7 +271,7 @@ public class CardBehaviourScript : CardGameBase, System.ICloneable
 
         }else
             {
-            card = null;
+            //card = null;
         }
     }
     public void AddToHero(CardBehaviourScript magic, HeroBehaviourScript target, CustomAction action)
